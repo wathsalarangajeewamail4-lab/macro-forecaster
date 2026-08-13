@@ -118,7 +118,7 @@ export default function BeautifulChart({ assetData, assetName }: BeautifulChartP
           <Tooltip 
             contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: '#f3f4f6', borderRadius: '8px' }}
             itemStyle={{ color: '#e5e7eb' }}
-            formatter={(value: any, name: string) => {
+            formatter={(value: any, name: any) => {
               if (value === null) return null;
               return [`$${Number(value).toFixed(2)}`, name.charAt(0).toUpperCase() + name.slice(1)];
             }}
