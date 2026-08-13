@@ -24,19 +24,17 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Using hardcoded URLs for the demo
+        // We use our Next.js backend proxy to completely bypass browser CORS rules!
         const [resForecast, resCalendar] = await Promise.all([
-          fetch("https://three-snakes-sleep.loca.lt/api/forecast", {
-            headers: {
-              'bypass-tunnel-reminder': 'true',
-              'User-Agent': 'macro-forecaster-dashboard'
-            }
+          fetch("/api/proxy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: "https://three-snakes-sleep.loca.lt/api/forecast" })
           }),
-          fetch("https://three-snakes-sleep.loca.lt/api/calendar", {
-            headers: {
-              'bypass-tunnel-reminder': 'true',
-              'User-Agent': 'macro-forecaster-dashboard'
-            }
+          fetch("/api/proxy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: "https://three-snakes-sleep.loca.lt/api/calendar" })
           })
         ]);
         
