@@ -16,49 +16,100 @@ export default function Dashboard() {
   const [activeAsset, setActiveAsset] = useState("USD");
   const [forecastData, setForecastData] = useState<any>(null);
   const [calendarEvents, setCalendarEvents] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [backendUrl, setBackendUrl] = useState("https://three-snakes-sleep.loca.lt");
+  const [isEditingUrl, setIsEditingUrl] = useState(false);
 
   useEffect(() => {
-    // Fetch forecast data and calendar from our FastAPI backend
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // We use our Next.js backend proxy to completely bypass browser CORS rules!
-        const [resForecast, resCalendar] = await Promise.all([
-          fetch("/api/proxy", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: "https://three-snakes-sleep.loca.lt/api/forecast" })
-          }),
-          fetch("/api/proxy", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: "https://three-snakes-sleep.loca.lt/api/calendar" })
-          })
-        ]);
-        
-        if (!resForecast.ok || !resCalendar.ok) throw new Error("Failed to fetch data from ML backend");
-        
-        const jsonForecast = await resForecast.json();
-        const jsonCalendar = await resCalendar.json();
-        
-        setForecastData(jsonForecast.data);
-        setCalendarEvents(jsonCalendar.events);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    // Load saved URL from localStorage on mount
+    const savedUrl = localStorage.getItem("macro_backend_url");
+    if (savedUrl) setBackendUrl(savedUrl);
   }, []);
+
+  const fetchData = async () => {
+    if (!backendUrl) return;
+    try {
+      setLoading(true);
+      setError(null);
+      // We use our Next.js backend proxy to bypass CORS
+      const [resForecast, resCalendar] = await Promise.all([
+        fetch("/api/proxy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: `${backendUrl}/api/forecast` })
+        }),
+        fetch("/api/proxy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: `${backendUrl}/api/calendar` })
+        })
+      ]);
+      
+      if (!resForecast.ok) {
+        const errData = await resForecast.json().catch(() => ({}));
+        throw new Error(errData.error || `Proxy Forecast Error: ${resForecast.status}`);
+      }
+      if (!resCalendar.ok) {
+        const errData = await resCalendar.json().catch(() => ({}));
+        throw new Error(errData.error || `Proxy Calendar Error: ${resCalendar.status}`);
+      }
+      
+      const jsonForecast = await resForecast.json();
+      const jsonCalendar = await resCalendar.json();
+      
+      setForecastData(jsonForecast.data);
+      setCalendarEvents(jsonCalendar.events);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (backendUrl && !isEditingUrl) {
+      fetchData();
+    }
+  }, [backendUrl, isEditingUrl]);
+
+  const saveUrl = () => {
+    localStorage.setItem("macro_backend_url", backendUrl);
+    setIsEditingUrl(false);
+  };
 
   const currentData = forecastData ? forecastData[activeAsset] : null;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-gray-100 font-sans p-6 md:p-12">
+      {/* Backend Connection Banner */}
+      {isEditingUrl ? (
+        <div className="bg-indigo-900/40 border border-indigo-500/30 p-4 rounded-xl mb-8 flex flex-col md:flex-row items-center gap-4">
+          <Info className="text-indigo-400" size={24} />
+          <div className="flex-1 text-sm text-indigo-200">
+            <strong>Colab Backend URL:</strong> Paste the new loca.lt URL from your Google Colab notebook here:
+          </div>
+          <div className="flex w-full md:w-auto gap-2">
+            <input 
+              type="text" 
+              value={backendUrl} 
+              onChange={(e) => setBackendUrl(e.target.value)}
+              className="bg-gray-900 border border-gray-700 text-white rounded-lg px-4 py-2 w-full md:w-80 text-sm focus:outline-none focus:border-indigo-500"
+              placeholder="https://your-url.loca.lt"
+            />
+            <button onClick={saveUrl} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              Connect
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-end mb-4">
+          <button onClick={() => setIsEditingUrl(true)} className="text-xs text-gray-500 hover:text-indigo-400 flex items-center gap-1 transition-colors">
+            <Activity size={12} /> Connected to: {backendUrl.replace("https://", "")} (Click to change)
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-gray-800 pb-6">
         <div>
