@@ -94,12 +94,15 @@ def get_live_prices():
     
     live_prices = {}
     
-    # Try bypassing SSL if behind a corporate proxy
+    # Try bypassing SSL if behind a corporate proxy and add User-Agent to bypass rate limits
     import requests
     import urllib3
     urllib3.disable_warnings()
     session = requests.Session()
     session.verify = False
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    })
     
     for name, ticker in ASSETS.items():
         try:
