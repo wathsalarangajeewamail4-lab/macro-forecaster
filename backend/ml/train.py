@@ -80,7 +80,20 @@ def walk_forward_validation():
             "important_features": xgb.get_feature_importance(asset, X_train.columns)
         }
         
-    print("\nTraining Complete. Model is ready to serve.")
+    print("\nSaving Models to Disk...")
+    import os
+    os.makedirs("models/saved", exist_ok=True)
+    xgb.save("models/saved/xgboost_ensemble.joblib")
+    
+    # Save feature names so the API knows what to pass
+    import joblib
+    joblib.dump(list(X_train.columns), "models/saved/features.joblib")
+    
+    # Also save the uncertainty stds for the API to use
+    uncertainties = {asset: res["uncertainty_std"] for asset, res in asset_results.items()}
+    joblib.dump(uncertainties, "models/saved/uncertainties.joblib")
+        
+    print("\nTraining Complete. Models saved to models/saved/.")
     return asset_results
 
 if __name__ == "__main__":

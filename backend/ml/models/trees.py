@@ -29,3 +29,13 @@ class XGBoostModel:
             return {}
         importance = self.models[asset_name].feature_importances_
         return dict(zip(feature_names, importance))
+
+    def save(self, filepath):
+        """Saves all trained models to disk"""
+        import joblib
+        joblib.dump(self.models, filepath)
+
+    def load(self, filepath):
+        """Loads trained models from disk"""
+        import joblib
+        self.models = joblib.load(filepath)

@@ -13,9 +13,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mocking the loaded model state for the API
-# In a real app, this would be populated by loading the saved models in a startup event
-MOCK_MODELS_LOADED = True
+import os
+import joblib
+
+# Global variables for models
+MODELS = None
+FEATURE_NAMES = None
+UNCERTAINTIES = None
+MOCK_MODELS_LOADED = False
+
+@app.on_event("startup")
+def load_models():
+    global MODELS, FEATURE_NAMES, UNCERTAINTIES, MOCK_MODELS_LOADED
+    try:
+        from ml.models.trees import XGBoostModel
+        model_path = "ml/models/saved/xgboost_ensemble.joblib"
+        feat_path = "ml/models/saved/features.joblib"
+        uncert_path = "ml/models/saved/uncertainties.joblib"
+        
+        if os.path.exists(model_path):
+            MODELS = XGBoostModel()
+            MODELS.load(model_path)
+            FEATURE_NAMES = joblib.load(feat_path)
+            UNCERTAINTIES = joblib.load(uncert_path)
+            MOCK_MODELS_LOADED = True
+            print("Successfully loaded XGBoost ML Models!")
+        else:
+            print("Warning: Models not found in ml/models/saved/.")
+    except Exception as e:
+        print(f"Failed to load models: {e}")
 
 @app.get("/")
 def read_root():
@@ -25,66 +51,71 @@ def read_root():
 def get_forecast():
     """
     Returns the ensemble predictions.
-    Uses real-time spot prices from yfinance and applies the ML engine's cached inference logic.
+    Uses real-time spot prices and applies the ML engine's true inference logic.
     """
-    from ml.data_loader import get_live_prices
+    from ml.data_loader import get_live_prices, get_latest_features
+    
+    if not MOCK_MODELS_LOADED or MODELS is None:
+        raise HTTPException(status_code=503, detail="Models not trained or loaded yet.")
+        
+    # 1. Fetch Live Spot Prices
     live_prices = get_live_prices()
     
-    if not MOCK_MODELS_LOADED:
-        raise HTTPException(status_code=503, detail="Models not loaded")
+    # 2. Fetch Latest Engineered Features for ML Inference
+    try:
+        live_features_df = get_latest_features()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate features: {e}")
         
-    # Generate some realistic-looking dummy data for the frontend based on the ML pipeline
-    # In reality, this calls `model.predict()` on the latest features
+    forecasts = {}
     
-    forecasts = {
-        "USD": {
-            "current_price": live_prices.get("USD", 104.50),
-            "forecast_direction": "bullish",
-            "probability": 0.65,
-            "predicted_change_pct": 0.002,
-            "uncertainty_interval": [-0.005, 0.009],
-            "alignment_score": 98.4,
-            "reasoning": [
-                {"feature": "VIX", "impact": "High (Risk-off supports USD)"},
-                {"feature": "FOMC_Sentiment", "impact": "Hawkish (Supports Yields)"}
-            ]
-        },
-        "OIL": {
-            "current_price": live_prices.get("OIL", 82.10),
-            "forecast_direction": "bearish",
-            "probability": 0.58,
-            "predicted_change_pct": -0.012,
-            "uncertainty_interval": [-0.030, 0.005],
-            "alignment_score": 96.5,
-            "reasoning": [
-                {"feature": "USD Strength", "impact": "High (Strong USD pressures commodities)"}
-            ]
-        },
-        "GOLD": {
-            "current_price": live_prices.get("GOLD", 2350.00),
-            "forecast_direction": "bullish",
-            "probability": 0.72,
-            "predicted_change_pct": 0.008,
-            "uncertainty_interval": [-0.002, 0.015],
-            "alignment_score": 99.1,
-            "reasoning": [
-                {"feature": "TIPS (Real Yields)", "impact": "Falling (Supports non-yielding assets)"},
-                {"feature": "Regime", "impact": "Inflation Hedge Demand"}
-            ]
-        },
-        "BTC": {
-            "current_price": live_prices.get("BTC", 68000.00),
-            "forecast_direction": "neutral",
-            "probability": 0.51,
-            "predicted_change_pct": 0.001,
-            "uncertainty_interval": [-0.040, 0.042],
-            "alignment_score": 85.0, # High variance due to crypto
-            "reasoning": [
-                {"feature": "VIX", "impact": "High (Risk-off pressures BTC)"},
-                {"feature": "Event Approaching", "impact": "High Volatility Expected Pre-FOMC"}
-            ]
+    # 3. Run Inference for each asset
+    for asset in ["USD", "OIL", "GOLD", "BTC"]:
+        if asset not in MODELS.models:
+            continue
+            
+        # Extract features in exact order expected by model
+        features_vec = live_features_df[FEATURE_NAMES]
+        
+        # Predict next day return
+        prediction = float(MODELS.predict(features_vec, asset)[0])
+        
+        # Convert prediction to directional logic
+        direction = "bullish" if prediction > 0 else "bearish"
+        
+        # Approximate probability (using a simple sigmoid mapping on log returns)
+        # Assuming predictions are small log returns e.g., 0.01 = 1%
+        # We scale it to make it look like a probability between 50% and 100%
+        prob = 0.5 + 0.5 * (1 - np.exp(-abs(prediction) * 50))
+        prob = min(max(prob, 0.51), 0.99) # Clamp between 51% and 99%
+        
+        # Uncertainty bounds from training standard deviation
+        std_resid = UNCERTAINTIES.get(asset, 0.01)
+        lower_bound = prediction - (1.28 * std_resid) # ~80% confidence
+        upper_bound = prediction + (1.28 * std_resid)
+        
+        # Feature Importance Reasoning
+        importances = MODELS.get_feature_importance(asset, FEATURE_NAMES)
+        # Sort and get top 2 features driving this specific asset
+        top_features = sorted(importances.items(), key=lambda x: x[1], reverse=True)[:2]
+        reasoning = []
+        for feat, score in top_features:
+            impact = "Strong" if score > 0.3 else "Moderate"
+            reasoning.append({
+                "feature": feat, 
+                "impact": f"{impact} influence on {asset} direction"
+            })
+            
+        # Synthesize final object for frontend
+        forecasts[asset] = {
+            "current_price": live_prices.get(asset, 0.0),
+            "forecast_direction": direction,
+            "probability": prob,
+            "predicted_change_pct": prediction,
+            "uncertainty_interval": [lower_bound, upper_bound],
+            "alignment_score": round(prob * 100, 1),
+            "reasoning": reasoning
         }
-    }
     
     return {"status": "success", "data": forecasts}
 

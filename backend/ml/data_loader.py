@@ -109,6 +109,30 @@ def get_live_prices():
             
     return live_prices
 
+def get_latest_features():
+    """
+    Pulls a short window of data to compute the absolute latest log returns for all assets and macros.
+    Appends the FOMC sentiment to match the training feature space.
+    Returns a single-row DataFrame ready for XGBoost predict().
+    """
+    # Fetch a short window to compute the latest log return
+    returns, combined = prepare_dataset(period="5d")
+    
+    if returns.empty:
+        raise ValueError("Failed to fetch live data for features.")
+        
+    # Get the single most recent row
+    latest = returns.iloc[[-1]].copy()
+    
+    # Add sentiment to match the training data
+    from ml.fomc_pipeline import generate_cached_sentiment
+    latest['FOMC_Sentiment'] = generate_cached_sentiment(latest.index)
+    
+    # Return the exact feature vector
+    return latest
+
 if __name__ == "__main__":
     print("Fetching live prices...")
     print(get_live_prices())
+    print("\nFetching latest features for inference...")
+    print(get_latest_features())
