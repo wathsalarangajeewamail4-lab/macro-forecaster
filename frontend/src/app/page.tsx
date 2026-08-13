@@ -26,8 +26,18 @@ export default function Dashboard() {
         setLoading(true);
         // Using hardcoded URLs for the demo
         const [resForecast, resCalendar] = await Promise.all([
-          fetch("http://localhost:8000/api/forecast"),
-          fetch("http://localhost:8000/api/calendar")
+          fetch("https://three-snakes-sleep.loca.lt/api/forecast", {
+            headers: {
+              'bypass-tunnel-reminder': 'true',
+              'User-Agent': 'macro-forecaster-dashboard'
+            }
+          }),
+          fetch("https://three-snakes-sleep.loca.lt/api/calendar", {
+            headers: {
+              'bypass-tunnel-reminder': 'true',
+              'User-Agent': 'macro-forecaster-dashboard'
+            }
+          })
         ]);
         
         if (!resForecast.ok || !resCalendar.ok) throw new Error("Failed to fetch data from ML backend");
