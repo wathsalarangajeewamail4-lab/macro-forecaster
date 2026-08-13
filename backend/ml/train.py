@@ -82,18 +82,18 @@ def walk_forward_validation():
         
     print("\nSaving Models to Disk...")
     import os
-    os.makedirs("models/saved", exist_ok=True)
-    xgb.save("models/saved/xgboost_ensemble.joblib")
+    os.makedirs("ml/models/saved", exist_ok=True)
+    xgb.save("ml/models/saved/xgboost_ensemble.joblib")
     
     # Save feature names so the API knows what to pass
     import joblib
-    joblib.dump(list(X_train.columns), "models/saved/features.joblib")
+    joblib.dump(list(X_train.columns), "ml/models/saved/features.joblib")
     
     # Also save the uncertainty stds for the API to use
     uncertainties = {asset: res["uncertainty_std"] for asset, res in asset_results.items()}
-    joblib.dump(uncertainties, "models/saved/uncertainties.joblib")
+    joblib.dump(uncertainties, "ml/models/saved/uncertainties.joblib")
         
-    print("\nTraining Complete. Models saved to models/saved/.")
+    print("\nTraining Complete. Models saved to ml/models/saved/.")
     return asset_results
 
 if __name__ == "__main__":
