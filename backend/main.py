@@ -84,7 +84,7 @@ def get_forecast():
     Returns the ensemble predictions.
     Uses real-time spot prices and applies the ML engine's true inference logic.
     """
-    from ml.data_loader import get_live_prices, get_latest_features
+    from ml.data_loader import get_live_prices, get_latest_features, get_last_updated
     
     if not MOCK_MODELS_LOADED or MODELS is None:
         raise HTTPException(status_code=503, detail="Models not trained or loaded yet.")
@@ -165,7 +165,9 @@ def get_forecast():
             "reasoning": reasoning
         }
     
-    return {"status": "success", "data": forecasts}
+    last_updated = get_last_updated()
+    
+    return {"status": "success", "last_updated": last_updated, "data": forecasts}
 
 @app.get("/api/calendar")
 def get_calendar():

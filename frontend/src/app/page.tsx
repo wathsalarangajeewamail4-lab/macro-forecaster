@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [activeAsset, setActiveAsset] = useState("USD");
   const [forecastData, setForecastData] = useState<any>(null);
   const [calendarEvents, setCalendarEvents] = useState<any>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [backendUrl, setBackendUrl] = useState("https://jumping-saving-protect-cats.trycloudflare.com");
@@ -56,6 +57,7 @@ export default function Dashboard() {
       const jsonCalendar = await resCalendar.json();
       
       setForecastData(jsonForecast.data);
+      setLastUpdated(jsonForecast.last_updated);
       setCalendarEvents(jsonCalendar.events);
     } catch (err: any) {
       setError(err.message);
@@ -144,6 +146,12 @@ export default function Dashboard() {
             )}
             {loading ? "Scanning Sentiment..." : error ? "Radar Disconnected" : "Sentiment Radar Online"}
           </div>
+          {lastUpdated && !loading && !error && (
+            <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-900/50 px-4 py-2 rounded-full border border-gray-800 transition-colors">
+              <Activity size={12} className="text-gray-500" />
+              Last Updated: <span className="text-gray-300 font-mono">{lastUpdated}</span>
+            </div>
+          )}
         </div>
       </header>
 
