@@ -13,7 +13,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
+import subprocess
 import os
+import sys
 import joblib
 
 # Global variables for models
@@ -22,7 +26,6 @@ FEATURE_NAMES = None
 UNCERTAINTIES = None
 MOCK_MODELS_LOADED = False
 
-@app.on_event("startup")
 def load_models():
     global MODELS, FEATURE_NAMES, UNCERTAINTIES, MOCK_MODELS_LOADED
     try:
@@ -37,15 +40,43 @@ def load_models():
             FEATURE_NAMES = joblib.load(feat_path)
             UNCERTAINTIES = joblib.load(uncert_path)
             MOCK_MODELS_LOADED = True
-            print("Successfully loaded XGBoost ML Models!")
+            print("Successfully loaded (or reloaded) XGBoost ML Models!")
         else:
             print("Warning: Models not found in ml/models/saved/.")
     except Exception as e:
         print(f"Failed to load models: {e}")
 
+def retrain_model_task():
+    print("Background Task: Starting 24-hour model retraining...")
+    try:
+        # Run the training script in a separate process to prevent memory leaks and handle imports cleanly
+        subprocess.run([sys.executable, "ml/train.py"], check=True)
+        print("Background Task: Retraining successful. Hot-reloading models into memory...")
+        load_models()
+    except Exception as e:
+        print(f"Background Task: Retraining failed: {e}")
+
+@app.on_event("startup")
+def startup_event():
+    # Load initial models
+    load_models()
+    
+    # Initialize and start background scheduler
+    scheduler = BackgroundScheduler()
+    
+    # 1. 15-Minute Live Data Loop
+    from ml.data_loader import refresh_data
+    scheduler.add_job(refresh_data, 'interval', minutes=15, id='data_fetch_job')
+    
+    # 2. 24-Hour Autonomous Retraining Loop
+    scheduler.add_job(retrain_model_task, 'interval', hours=24, id='retrain_job')
+    
+    scheduler.start()
+    print("APScheduler started: Autonomous background jobs are active.")
+
 @app.get("/")
 def read_root():
-    return {"status": "System Online", "models_loaded": MOCK_MODELS_LOADED}
+    return {"status": "System Online", "models_loaded": MOCK_MODELS_LOADED, "autonomous_mode": True}
 
 @app.get("/api/forecast")
 def get_forecast():

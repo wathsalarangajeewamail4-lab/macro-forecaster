@@ -78,26 +78,19 @@ def prepare_dataset(period="5y"):
     
     return returns, combined
 
-import functools
+LATEST_PRICES = {}
+LATEST_FEATURES = None
 
-@functools.lru_cache(maxsize=1)
-def get_live_prices():
-    """
-    Fetches the absolute latest real-time prices for the assets to wire directly into the API.
-    If the network connection blocks yfinance (e.g. SSL issues), it falls back to realistic defaults.
-    """
-    
-    # Realistic fallbacks if the network proxy blocks Yahoo Finance
+def _fetch_live_prices_internal():
+    """Internal function to do the actual network fetch for prices."""
     fallbacks = {
-        "USD": 99.976,    # Updated to match actual current spot price
+        "USD": 99.976,
         "OIL": 82.10,
-        "GOLD": 4376.00,  # Updated to match current actual spot price
+        "GOLD": 4376.00,
         "BTC": 68000.00
     }
     
     live_prices = {}
-    
-    # Try bypassing SSL if behind a corporate proxy and add User-Agent to bypass rate limits
     import requests
     import urllib3
     urllib3.disable_warnings()
@@ -109,7 +102,6 @@ def get_live_prices():
     
     for name, ticker in ASSETS.items():
         try:
-            # We use period="1d" to get the absolute latest available tick
             ticker_obj = yf.Ticker(ticker, session=session)
             hist = ticker_obj.history(period="1d")
             if not hist.empty:
@@ -123,41 +115,52 @@ def get_live_prices():
             
     return live_prices
 
-@functools.lru_cache(maxsize=1)
-def get_latest_features():
-    """
-    Pulls a short window of data to compute the absolute latest log returns for all assets and macros.
-    Appends the FOMC sentiment to match the training feature space.
-    Returns a single-row DataFrame ready for XGBoost predict().
-    """
+def _fetch_latest_features_internal():
+    """Internal function to do the actual network fetch for features."""
     try:
-        # Fetch a short window to compute the latest log return
         returns, combined = prepare_dataset(period="5d")
-        
         if returns.empty:
             raise ValueError("yfinance returned empty data")
             
-        # Get the single most recent row
         latest = returns.iloc[[-1]].copy()
         
-        # Add sentiment to match the training data
         from ml.fomc_pipeline import generate_cached_sentiment
         latest['FOMC_Sentiment'] = generate_cached_sentiment(latest.index)
         
         return latest
     except Exception as e:
         print(f"Warning: Failed to fetch live data for features ({e}). Using synthetic fallback features to prevent API crash.")
-        # Fallback to synthetic feature data so the ML model can still run inference
-        # without crashing the entire dashboard.
         columns = list(ASSETS.keys()) + list(MACRO.keys()) + ['FOMC_Sentiment']
-        # Create a single row DataFrame with small random log returns (e.g. slight market noise)
-        np.random.seed(42) # Fixed seed for stable fallback
+        np.random.seed(42)
         fallback_data = np.random.normal(0.001, 0.005, len(columns))
         latest = pd.DataFrame([fallback_data], columns=columns)
         return latest
 
+def refresh_data():
+    """Called by the APScheduler to refresh prices and features globally."""
+    global LATEST_PRICES, LATEST_FEATURES
+    print("Background Task: Refreshing live market data...")
+    LATEST_PRICES = _fetch_live_prices_internal()
+    LATEST_FEATURES = _fetch_latest_features_internal()
+    print(f"Background Task: Market data refreshed. USD: {LATEST_PRICES.get('USD')}")
+
+def get_live_prices():
+    """Returns the cached global prices, which are updated every 15 minutes by the scheduler."""
+    global LATEST_PRICES
+    if not LATEST_PRICES:
+        print("Initial data fetch (blocking)...")
+        refresh_data()
+    return LATEST_PRICES
+
+def get_latest_features():
+    """Returns the cached global features, which are updated every 15 minutes by the scheduler."""
+    global LATEST_FEATURES
+    if LATEST_FEATURES is None:
+        print("Initial data fetch (blocking)...")
+        refresh_data()
+    return LATEST_FEATURES
+
 if __name__ == "__main__":
-    print("Fetching live prices...")
-    print(get_live_prices())
-    print("\nFetching latest features for inference...")
-    print(get_latest_features())
+    refresh_data()
+    print("Live Prices:", get_live_prices())
+    print("\nLatest Features:", get_latest_features())
