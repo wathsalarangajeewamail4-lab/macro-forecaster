@@ -123,13 +123,25 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-sm text-gray-400 bg-gray-900/50 px-4 py-2 rounded-full border border-gray-800">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-            Ensemble Models Online
+          <div className="flex items-center gap-2 text-sm text-gray-400 bg-gray-900/50 px-4 py-2 rounded-full border border-gray-800 transition-colors">
+            {loading ? (
+              <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
+            ) : error ? (
+              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+            ) : (
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+            )}
+            {loading ? "Warming up Models..." : error ? "Ensemble Offline" : "Ensemble Models Online"}
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-400 bg-gray-900/50 px-4 py-2 rounded-full border border-gray-800">
-            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-            Sentiment Radar Online
+          <div className="flex items-center gap-2 text-sm text-gray-400 bg-gray-900/50 px-4 py-2 rounded-full border border-gray-800 transition-colors">
+            {loading ? (
+              <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
+            ) : error ? (
+              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+            ) : (
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+            )}
+            {loading ? "Scanning Sentiment..." : error ? "Radar Disconnected" : "Sentiment Radar Online"}
           </div>
         </div>
       </header>
