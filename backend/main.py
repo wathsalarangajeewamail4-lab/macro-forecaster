@@ -86,7 +86,8 @@ def get_forecast():
         # Approximate probability (using a simple sigmoid mapping on log returns)
         # Assuming predictions are small log returns e.g., 0.01 = 1%
         # We scale it to make it look like a probability between 50% and 100%
-        prob = 0.5 + 0.5 * (1 - np.exp(-abs(prediction) * 50))
+        # Increased multiplier to 1000 because daily predictions are typically very small (e.g., 0.001)
+        prob = 0.5 + 0.5 * (1 - np.exp(-abs(prediction) * 1000))
         prob = min(max(prob, 0.51), 0.99) # Clamp between 51% and 99%
         
         # Uncertainty bounds from training standard deviation
