@@ -135,23 +135,79 @@ def get_forecast():
         top_features = sorted(importances.items(), key=lambda x: x[1], reverse=True)[:2]
         reasoning = []
         
-        # Narrative templates for rich explanations
-        narratives = {
-            "FOMC_Sentiment": f"The Federal Reserve's recent rhetoric and monetary policy posture are heavily influencing {asset}. The Natural Language Processing (NLP) models detect shifting hawkish/dovish tones in central bank transcripts, which historically dictate the near-term liquidity environment for this asset class.",
-            "TNX": f"Fluctuations in the 10-Year US Treasury yield are currently a primary driver for {asset}. As the global risk-free rate shifts, institutional capital reallocation is creating sustained directional pressure.",
-            "VIX": f"Overall market volatility and risk-aversion metrics are currently dictating the flow of capital into {asset}. During periods of shifting uncertainty, this asset typically exhibits strong beta reactions to broader equity market panic or complacency.",
-            "DXY": f"The relative strength of the US Dollar against a basket of foreign currencies is deeply impacting {asset}. Because global commodities and major risk assets are priced in dollars, currency headwinds/tailwinds are fundamentally altering its valuation.",
-            "BTC": f"Cryptocurrency market liquidity and retail risk appetite are showing strong correlation with {asset}'s current price action. This suggests that broader speculative capital flows are spilling over into this asset's order books.",
-            "GOLD": f"Safe-haven capital flows and institutional hedging strategies involving Gold are bleeding into {asset}'s pricing. This indicates that macro players are positioning for potential inflation or geopolitical risks.",
-            "OIL": f"Energy sector dynamics and global crude supply-demand imbalances are heavily influencing {asset}. As a core driver of CPI inflation, energy price shocks are forcing market participants to re-evaluate this asset's fair value.",
-            "USD": f"Core dollar liquidity and forex market dynamics are currently overriding other idiosyncratic factors for {asset}. The absolute strength of the reserve currency is acting as a major pricing constraint."
-        }
-        
         for feat, score in top_features:
             impact_level = "Primary Institutional Driver" if score > 0.3 else "Secondary Macro Catalyst"
-            base_narrative = narratives.get(feat, f"Institutional algorithmic models are heavily weighting {feat} in their predictive horizons for {asset}, forcing capital flows to align with its momentum.")
             
-            # Combine the classification with the rich paragraph
+            # Extract the actual real-time value (return) of the feature today
+            feat_val = float(features_vec[feat].iloc[0]) if feat in features_vec else 0.0
+            is_rising = feat_val > 0
+            direction_str = "rising" if is_rising else "falling"
+            direction_adv = "strengthening" if is_rising else "weakening"
+            
+            base_narrative = ""
+            
+            if feat == "TNX":
+                if asset == "GOLD":
+                    if is_rising:
+                        base_narrative = "The 10-year Treasury yield is rising today. Higher yields increase the opportunity cost of holding non-yielding Gold, creating bearish pressure as institutional capital rotates into fixed income."
+                    else:
+                        base_narrative = "The 10-year Treasury yield is falling today. Lower real yields are highly bullish for Gold, as the opportunity cost of holding the precious metal decreases, attracting safe-haven capital."
+                elif asset == "BTC":
+                    if is_rising:
+                        base_narrative = "Rising 10-year Treasury yields are tightening liquidity conditions today. As the global risk-free rate climbs, speculative capital is flowing away from high-beta risk assets like Bitcoin."
+                    else:
+                        base_narrative = "The 10-year Treasury yield is dropping today. Looser monetary conditions and lower yields typically act as a strong tailwind for risk-on assets like Bitcoin."
+                elif asset == "USD":
+                    if is_rising:
+                        base_narrative = "US Treasury yields are climbing today. Higher yields attract foreign capital seeking better returns, creating structural bullish momentum for the US Dollar."
+                    else:
+                        base_narrative = "US Treasury yields are falling today. As the interest rate differential narrows, the US Dollar faces structural headwinds as capital seeks higher yields elsewhere."
+                else: # OIL or default
+                    base_narrative = f"The 10-year Treasury yield is {direction_str} today. As a proxy for global growth and liquidity, this shift in the risk-free rate is forcing capital reallocation that directly impacts {asset}."
+                    
+            elif feat == "VIX":
+                if is_rising:
+                    if asset in ["GOLD", "USD"]:
+                        base_narrative = f"Market volatility (VIX) is spiking today. During periods of heightened fear, capital flees from risk assets into safe-havens, providing strong structural support for {asset}."
+                    else:
+                        base_narrative = f"Market volatility (VIX) is spiking today. During periods of heightened fear, liquidity rapidly drains from risk assets like {asset} as institutional capital flees to safety."
+                else:
+                    if asset in ["GOLD", "USD"]:
+                        base_narrative = f"Market volatility (VIX) is dropping today. As fear subsides and a 'risk-on' environment takes hold, safe-haven assets like {asset} typically face structural headwinds."
+                    else:
+                        base_narrative = f"Market volatility (VIX) is dropping today. As fear subsides and a 'risk-on' environment takes hold, speculative capital flows freely back into growth and beta assets like {asset}."
+                        
+            elif feat == "USD" or feat == "DXY":
+                if asset == "OIL":
+                    if is_rising:
+                        base_narrative = "The US Dollar is strengthening today. Because crude oil is priced in dollars globally, a stronger dollar makes oil more expensive for foreign buyers, suppressing global demand and applying downward pressure on prices."
+                    else:
+                        base_narrative = "The US Dollar is weakening today. A softer dollar makes crude oil cheaper for foreign buyers, typically spurring global demand and acting as a bullish catalyst for prices."
+                elif asset == "GOLD":
+                    if is_rising:
+                        base_narrative = "The US Dollar is strengthening today. Since Gold is priced in USD, a stronger currency inherently applies bearish pressure to the precious metal's nominal valuation."
+                    else:
+                        base_narrative = "The US Dollar is weakening today. Gold typically exhibits a strong inverse correlation with the dollar, meaning current dollar weakness is providing a strong bullish tailwind."
+                elif asset == "BTC":
+                    if is_rising:
+                        base_narrative = "The US Dollar is strengthening today. A strong reserve currency typically signals tighter global liquidity, which suppresses speculative flows into crypto markets."
+                    else:
+                        base_narrative = "The US Dollar is weakening today. Dollar depreciation often acts as a major catalyst for Bitcoin, as investors seek decentralized hedges against fiat debasement."
+                else:
+                    base_narrative = f"The US Dollar is {direction_adv} today. The relative strength of the reserve currency is fundamentally altering the valuation dynamics for {asset}."
+            
+            elif feat == "FOMC_Sentiment":
+                if is_rising: 
+                    base_narrative = f"The NLP model detects hawkish FOMC sentiment today. Expectations of tighter monetary policy are reducing systemic liquidity, which heavily influences the institutional positioning for {asset}."
+                else:
+                    base_narrative = f"The NLP model detects dovish FOMC sentiment today. Expectations of accommodative monetary policy are injecting liquidity into the system, acting as a major driver for {asset}."
+                    
+            elif feat in ["GOLD", "OIL", "BTC", "USD"]:
+                base_narrative = f"The momentum in {feat} is currently acting as a leading indicator for {asset}. Institutional models are heavily weighting the {direction_str} price action of {feat} to predict cross-asset capital flows."
+                
+            else:
+                base_narrative = f"Institutional algorithmic models are heavily weighting the {direction_str} momentum of {feat} in their predictive horizons for {asset}."
+            
             reasoning.append({
                 "feature": f"{feat} ({impact_level})", 
                 "impact": base_narrative
