@@ -32,27 +32,17 @@ export default function Dashboard() {
     try {
       setLoading(true);
       setError(null);
-      // We use our Next.js backend proxy to bypass CORS
+      // Connect directly to Cloudflare from the browser to prevent Vercel AWS IPs from being blocked
       const [resForecast, resCalendar] = await Promise.all([
-        fetch("/api/proxy", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: `${backendUrl}/api/forecast` })
-        }),
-        fetch("/api/proxy", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: `${backendUrl}/api/calendar` })
-        })
+        fetch(`${backendUrl}/api/forecast`),
+        fetch(`${backendUrl}/api/calendar`)
       ]);
       
       if (!resForecast.ok) {
-        const errData = await resForecast.json().catch(() => ({}));
-        throw new Error(errData.error || `Proxy Forecast Error: ${resForecast.status}`);
+        throw new Error(`Forecast Error: ${resForecast.status}`);
       }
       if (!resCalendar.ok) {
-        const errData = await resCalendar.json().catch(() => ({}));
-        throw new Error(errData.error || `Proxy Calendar Error: ${resCalendar.status}`);
+        throw new Error(`Calendar Error: ${resCalendar.status}`);
       }
       
       const jsonForecast = await resForecast.json();
