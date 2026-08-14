@@ -64,7 +64,7 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (isInitialized && backendUrl && !isEditingUrl) {
+    if (isInitialized && (backendUrl !== null) && !isEditingUrl) {
       fetchData();
     }
   }, [backendUrl, isEditingUrl, isInitialized]);
