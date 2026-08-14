@@ -118,8 +118,8 @@ export default function Dashboard() {
             <Activity className="text-indigo-500" size={32} />
             Institutional <span className="font-semibold text-white">Macro Forecaster</span>
           </h1>
-          <p className="text-gray-400 mt-2 text-sm md:text-base max-w-3xl">
-            Multi-modal ensemble model utilizing Hugging Face NLP, Real Yields, and Economic Calendar event anticipation to predict asset directional edge.
+          <p className="text-gray-400 mt-3 text-sm md:text-base max-w-4xl leading-relaxed">
+            An advanced multi-modal machine learning architecture combining gradient-boosted decision trees (XGBoost) and transformer-based Natural Language Processing (FinBERT) to dynamically predict cross-asset directional probabilities. The system ingests real-time macroeconomic indicators, sovereign yield curves, and FOMC sentiment analysis via a high-performance FastAPI backend, delivering sub-second probabilistic forecasting to a Next.js edge-rendered dashboard.
           </p>
         </div>
         <div className="flex flex-col gap-2">
