@@ -35,8 +35,6 @@ def generate_cached_sentiment(dates_index):
     we simulate a cached sentiment series for the date index.
     In a real production environment, this would load from a precomputed DB.
     """
-    analyzer = FOMCSentimentAnalyzer()
-    
     # Generate a random walk of sentiment for demonstration purposes
     import numpy as np
     np.random.seed(42)
