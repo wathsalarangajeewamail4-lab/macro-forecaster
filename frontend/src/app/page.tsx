@@ -18,13 +18,19 @@ export default function Dashboard() {
   const [calendarEvents, setCalendarEvents] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [backendUrl, setBackendUrl] = useState("https://three-snakes-sleep.loca.lt");
+  const [backendUrl, setBackendUrl] = useState("");
   const [isEditingUrl, setIsEditingUrl] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     // Load saved URL from localStorage on mount
     const savedUrl = localStorage.getItem("macro_backend_url");
-    if (savedUrl) setBackendUrl(savedUrl);
+    if (savedUrl) {
+      setBackendUrl(savedUrl);
+    } else {
+      setIsEditingUrl(true);
+    }
+    setIsInitialized(true);
   }, []);
 
   const fetchData = async () => {
@@ -58,13 +64,18 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (backendUrl && !isEditingUrl) {
+    if (isInitialized && backendUrl && !isEditingUrl) {
       fetchData();
     }
-  }, [backendUrl, isEditingUrl]);
+  }, [backendUrl, isEditingUrl, isInitialized]);
 
   const saveUrl = () => {
-    localStorage.setItem("macro_backend_url", backendUrl);
+    let finalUrl = backendUrl.trim();
+    if (finalUrl && !finalUrl.startsWith("http")) {
+      finalUrl = "https://" + finalUrl;
+      setBackendUrl(finalUrl);
+    }
+    localStorage.setItem("macro_backend_url", finalUrl);
     setIsEditingUrl(false);
   };
 
