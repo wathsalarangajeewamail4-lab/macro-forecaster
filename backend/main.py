@@ -138,7 +138,7 @@ def get_forecast():
         # Narrative templates for rich explanations
         narratives = {
             "FOMC_Sentiment": f"The Federal Reserve's recent rhetoric and monetary policy posture are heavily influencing {asset}. The Natural Language Processing (NLP) models detect shifting hawkish/dovish tones in central bank transcripts, which historically dictate the near-term liquidity environment for this asset class.",
-            "US10Y": f"Fluctuations in the 10-Year US Treasury yield are currently a primary driver for {asset}. As the global risk-free rate shifts, institutional capital reallocation is creating sustained directional pressure.",
+            "TNX": f"Fluctuations in the 10-Year US Treasury yield are currently a primary driver for {asset}. As the global risk-free rate shifts, institutional capital reallocation is creating sustained directional pressure.",
             "VIX": f"Overall market volatility and risk-aversion metrics are currently dictating the flow of capital into {asset}. During periods of shifting uncertainty, this asset typically exhibits strong beta reactions to broader equity market panic or complacency.",
             "DXY": f"The relative strength of the US Dollar against a basket of foreign currencies is deeply impacting {asset}. Because global commodities and major risk assets are priced in dollars, currency headwinds/tailwinds are fundamentally altering its valuation.",
             "BTC": f"Cryptocurrency market liquidity and retail risk appetite are showing strong correlation with {asset}'s current price action. This suggests that broader speculative capital flows are spilling over into this asset's order books.",
