@@ -24,14 +24,10 @@ export default function Dashboard() {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Load saved URL from localStorage on mount, otherwise stick to hardcoded default
-    const savedUrl = localStorage.getItem("macro_backend_url");
-    if (savedUrl && savedUrl !== "https://engineer-specialized-creativity-plastics.trycloudflare.com") {
-      setBackendUrl(savedUrl);
-    } else {
-      localStorage.setItem("macro_backend_url", "https://engineer-specialized-creativity-plastics.trycloudflare.com");
-      setIsEditingUrl(false);
-    }
+    // Force the hardcoded URL and clear any old ones from the user's browser
+    localStorage.setItem("macro_backend_url", "https://engineer-specialized-creativity-plastics.trycloudflare.com");
+    setBackendUrl("https://engineer-specialized-creativity-plastics.trycloudflare.com");
+    setIsEditingUrl(false);
     setIsInitialized(true);
   }, []);
 

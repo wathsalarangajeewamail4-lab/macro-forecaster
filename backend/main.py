@@ -98,6 +98,9 @@ def get_forecast():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate features: {e}")
         
+    if live_features_df is None or live_prices is None:
+        raise HTTPException(status_code=503, detail="Market data temporarily unavailable (Yahoo blocked and no historical cache exists).")
+        
     forecasts = {}
     
     # 3. Run Inference for each asset
