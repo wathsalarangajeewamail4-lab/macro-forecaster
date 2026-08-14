@@ -19,14 +19,14 @@ export default function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [backendUrl, setBackendUrl] = useState("https://engineer-specialized-creativity-plastics.trycloudflare.com");
+  const [backendUrl, setBackendUrl] = useState("http://192.248.43.132:8085");
   const [isEditingUrl, setIsEditingUrl] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     // Force the hardcoded URL and clear any old ones from the user's browser
-    localStorage.setItem("macro_backend_url", "https://engineer-specialized-creativity-plastics.trycloudflare.com");
-    setBackendUrl("https://engineer-specialized-creativity-plastics.trycloudflare.com");
+    localStorage.setItem("macro_backend_url", "http://192.248.43.132:8085");
+    setBackendUrl("http://192.248.43.132:8085");
     setIsEditingUrl(false);
     setIsInitialized(true);
   }, []);
