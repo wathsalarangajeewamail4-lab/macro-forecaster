@@ -19,27 +19,28 @@ export default function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [backendUrl, setBackendUrl] = useState("http://192.248.43.132:8085");
+  const [backendUrl, setBackendUrl] = useState("");
   const [isEditingUrl, setIsEditingUrl] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Force the hardcoded URL and clear any old ones from the user's browser
-    localStorage.setItem("macro_backend_url", "http://192.248.43.132:8085");
-    setBackendUrl("http://192.248.43.132:8085");
+    // Rely on Next.js server-side API proxy to hide IP
+    localStorage.setItem("macro_backend_url", "");
+    setBackendUrl("");
     setIsEditingUrl(false);
     setIsInitialized(true);
   }, []);
 
   const fetchData = async () => {
-    if (!backendUrl) return;
+    // If backendUrl is set via UI, use it. Otherwise, use local Vercel /api proxy.
+    const urlPrefix = backendUrl ? backendUrl : "";
     try {
       setLoading(true);
       setError(null);
-      // Connect directly to Cloudflare from the browser to prevent Vercel AWS IPs from being blocked
+      
       const [resForecast, resCalendar] = await Promise.all([
-        fetch(`${backendUrl}/api/forecast`),
-        fetch(`${backendUrl}/api/calendar`)
+        fetch(`${urlPrefix}/api/forecast`),
+        fetch(`${urlPrefix}/api/calendar`)
       ]);
       
       if (!resForecast.ok) {
@@ -105,7 +106,7 @@ export default function Dashboard() {
       ) : (
         <div className="flex justify-end mb-4">
           <button onClick={() => setIsEditingUrl(true)} className="text-xs text-gray-500 hover:text-indigo-400 flex items-center gap-1 transition-colors">
-            <Activity size={12} /> Connected to: {backendUrl.replace("https://", "")} (Click to change)
+            <Activity size={12} /> Connected to: {backendUrl ? backendUrl.replace("https://", "") : "Institutional Server"} (Click to change)
           </button>
         </div>
       )}
