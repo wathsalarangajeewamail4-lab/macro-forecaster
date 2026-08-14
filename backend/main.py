@@ -95,16 +95,32 @@ def get_forecast():
         lower_bound = prediction - (1.28 * std_resid) # ~80% confidence
         upper_bound = prediction + (1.28 * std_resid)
         
-        # Feature Importance Reasoning
+        # Feature Importance Reasoning (Explanation Engine)
         importances = MODELS.get_feature_importance(asset, FEATURE_NAMES)
         # Sort and get top 2 features driving this specific asset
         top_features = sorted(importances.items(), key=lambda x: x[1], reverse=True)[:2]
         reasoning = []
+        
+        # Narrative templates for rich explanations
+        narratives = {
+            "FOMC_Sentiment": f"The Federal Reserve's recent rhetoric and monetary policy posture are heavily influencing {asset}. The Natural Language Processing (NLP) models detect shifting hawkish/dovish tones in central bank transcripts, which historically dictate the near-term liquidity environment for this asset class.",
+            "US10Y": f"Fluctuations in the 10-Year US Treasury yield are currently a primary driver for {asset}. As the global risk-free rate shifts, institutional capital reallocation is creating sustained directional pressure.",
+            "VIX": f"Overall market volatility and risk-aversion metrics are currently dictating the flow of capital into {asset}. During periods of shifting uncertainty, this asset typically exhibits strong beta reactions to broader equity market panic or complacency.",
+            "DXY": f"The relative strength of the US Dollar against a basket of foreign currencies is deeply impacting {asset}. Because global commodities and major risk assets are priced in dollars, currency headwinds/tailwinds are fundamentally altering its valuation.",
+            "BTC": f"Cryptocurrency market liquidity and retail risk appetite are showing strong correlation with {asset}'s current price action. This suggests that broader speculative capital flows are spilling over into this asset's order books.",
+            "GOLD": f"Safe-haven capital flows and institutional hedging strategies involving Gold are bleeding into {asset}'s pricing. This indicates that macro players are positioning for potential inflation or geopolitical risks.",
+            "OIL": f"Energy sector dynamics and global crude supply-demand imbalances are heavily influencing {asset}. As a core driver of CPI inflation, energy price shocks are forcing market participants to re-evaluate this asset's fair value.",
+            "USD": f"Core dollar liquidity and forex market dynamics are currently overriding other idiosyncratic factors for {asset}. The absolute strength of the reserve currency is acting as a major pricing constraint."
+        }
+        
         for feat, score in top_features:
-            impact = "Strong" if score > 0.3 else "Moderate"
+            impact_level = "Primary Institutional Driver" if score > 0.3 else "Secondary Macro Catalyst"
+            base_narrative = narratives.get(feat, f"Institutional algorithmic models are heavily weighting {feat} in their predictive horizons for {asset}, forcing capital flows to align with its momentum.")
+            
+            # Combine the classification with the rich paragraph
             reasoning.append({
-                "feature": feat, 
-                "impact": f"{impact} influence on {asset} direction"
+                "feature": f"{feat} ({impact_level})", 
+                "impact": base_narrative
             })
             
         # Synthesize final object for frontend
