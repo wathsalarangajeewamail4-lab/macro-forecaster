@@ -18,17 +18,18 @@ export default function Dashboard() {
   const [calendarEvents, setCalendarEvents] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [backendUrl, setBackendUrl] = useState("");
+  const [backendUrl, setBackendUrl] = useState("https://jumping-saving-protect-cats.trycloudflare.com");
   const [isEditingUrl, setIsEditingUrl] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Load saved URL from localStorage on mount
+    // Load saved URL from localStorage on mount, otherwise stick to hardcoded default
     const savedUrl = localStorage.getItem("macro_backend_url");
-    if (savedUrl) {
+    if (savedUrl && savedUrl !== "https://jumping-saving-protect-cats.trycloudflare.com") {
       setBackendUrl(savedUrl);
     } else {
-      setIsEditingUrl(true);
+      localStorage.setItem("macro_backend_url", "https://jumping-saving-protect-cats.trycloudflare.com");
+      setIsEditingUrl(false);
     }
     setIsInitialized(true);
   }, []);
