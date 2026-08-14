@@ -78,6 +78,9 @@ def prepare_dataset(period="5y"):
     
     return returns, combined
 
+import functools
+
+@functools.lru_cache(maxsize=1)
 def get_live_prices():
     """
     Fetches the absolute latest real-time prices for the assets to wire directly into the API.
@@ -120,6 +123,7 @@ def get_live_prices():
             
     return live_prices
 
+@functools.lru_cache(maxsize=1)
 def get_latest_features():
     """
     Pulls a short window of data to compute the absolute latest log returns for all assets and macros.
