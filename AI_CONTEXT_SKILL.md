@@ -19,7 +19,7 @@ The Macro Forecaster is an institutional-grade macroeconomic predictive dashboar
 ## 2. Infrastructure & IP Addresses
 
 ### Remote Backend Server (Laravel Server)
-- **IP Address**: `192.248.43.132`
+- **IP Address**: `[REDACTED_IP_FOR_SECURITY]`
 - **SSH Access**: Connect via `ssh laravel-server` (Configured in local `~/.ssh/config`).
 - **Project Path**: `/root/macro-forecaster/backend`
 - **Virtual Environment**: `/root/macro-forecaster/backend/venv` (Python 3.12)
