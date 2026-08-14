@@ -55,8 +55,11 @@ export default function BeautifulChart({ assetData, assetName }: BeautifulChartP
     let spread = 0;
     
     for (let i = 1; i <= 7; i++) {
-      // simulate compounding the predicted change
-      forecastPrice = forecastPrice * (1 + (predicted_change_pct / 7)); 
+      // The ML predicted_change_pct is a daily log return (usually in basis points like 0.0001).
+      // To make the directional edge visually apparent on the chart alongside 1% historical volatility,
+      // we apply a visualization scaler so the trend line curves visibly in the predicted direction.
+      const visualScaler = 50; 
+      forecastPrice = forecastPrice * (1 + (predicted_change_pct * visualScaler)); 
       
       // Expand the uncertainty interval over time
       spread += ((uncertainty_interval[1] - uncertainty_interval[0]) / 2) * current_price / 7;
