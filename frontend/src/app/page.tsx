@@ -316,6 +316,17 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="mt-16 pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-600">
+        <div className="flex items-center gap-2">
+          <Activity size={14} className="text-gray-700" />
+          <span>Macro Forecaster Engine</span>
+        </div>
+        <div>
+          &copy; {new Date().getFullYear()} Wathsala Nitthawela. All rights reserved.
+        </div>
+      </footer>
     </div>
   );
 }
